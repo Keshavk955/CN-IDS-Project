@@ -8,4 +8,12 @@ security_monitor.db
 venv/
 
 .vscode/
-.idea/
+.idea/*.py[cod]
+*.db
+*.sqlite
+*.sqlite3
+*.joblib
+*.pkl
+*.pcap
+*.pcapng
+.streamlit/secrets.toml

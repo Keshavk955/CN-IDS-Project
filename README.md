@@ -1,510 +1,65 @@
-\# Hybrid Network Security Monitoring and Intrusion Detection System
+# Hybrid Network Security Monitoring & IDS
 
+## Current contribution
 
+This student prototype combines rule-based traffic detection with an Isolation Forest anomaly signal, a combined risk score, time-decayed source reputation, component-level score explanations, and feedback-guided adaptive weighting.
 
-\## Project Title
+The adaptive weighting is a transparent bounded heuristic. When an analyst labels an alert as a true positive, components scoring above that alert's mean component score gain relative weight. When an analyst labels an alert as a false positive, those relatively high components lose relative weight. The weights remain positive, sum to 100%, and are saved in SQLite for subsequent alerts. This is a project-level feedback mechanism, not a claim that the system is production-ready or statistically calibrated.
 
+## Detection pipeline
 
+1. Scapy captures authorized IPv4 traffic, or the safe simulator generates synthetic packets.
+2. The packet parser extracts addresses, protocol, packet size, ports and TCP flags where available.
+3. The detection engine evaluates port-scan, packet-rate, ICMP-flood and SYN-flood patterns.
+4. Isolation Forest produces a prototype anomaly signal based on a generated baseline.
+5. Rule, ML, anomaly and time-decayed historical scores are combined using stored adaptive weights.
+6. SQLite stores alerts, component scores, weights used for each alert, simulated/live status, and analyst feedback.
+7. Streamlit displays traffic, alerts, score contributions, weights and feedback controls.
 
-Hybrid Network Security Monitoring and Intrusion Detection System using Rule-Based and Machine Learning Detection with Adaptive Risk Scoring
+## Setup
 
+From the project root in PowerShell:
 
+```powershell
+python -m pip install -r requirements.txt
+python -m unittest -v test_adaptive_scoring.py
+```
 
-\---
+Start the dashboard:
 
+```powershell
+python -m streamlit run dashboard.py
+```
 
+The **Run safe demo** button processes 52 synthetic packets and does not send traffic to a network. The **Run benign-burst feedback example** button generates a labelled benign high-volume scenario that deliberately trips the simple packet-rate heuristic. Use that known benign alert to demonstrate a false-positive feedback update.
 
-\## Project Description
+## Live capture
 
+First list available Scapy interfaces:
 
+```powershell
+python run_live.py --list-interfaces
+```
 
-This project is a Network Security Monitoring and Intrusion Detection System designed to monitor network traffic, extract packet information, detect suspicious network activity, generate security alerts, and store detected events for further analysis.
+Then use one exact interface name from the output:
 
+```powershell
+python run_live.py --interface "Wi-Fi"
+```
 
+Replace `Wi-Fi` with the actual interface name on the machine. Capture may require elevated permissions and Npcap on Windows. Only monitor traffic you are authorized to capture. Press `Ctrl+C` to stop.
 
-The system combines rule-based detection techniques with machine learning-based detection and adaptive risk scoring to improve the identification and prioritization of suspicious network behavior.
+The live-capture bridge has been syntax-checked but should be verified on the user's Windows/Npcap setup before claiming live capture is working end to end.
 
+## Risk scoring and explanation
 
+The default weights are 35% rule, 35% ML, 20% anomaly and 10% historical. Every new alert stores the component scores and weights used at creation time. The dashboard's **Explain a risk score** section shows each component's weighted contribution. Feedback changes the weights for later alerts; it does not rewrite previous scores.
 
-\---
+Historical source reputation uses exponential decay with a 15-minute half-life, so older alerts have progressively less influence.
 
+## Limitations
 
-
-\## Objectives
-
-
-
-\- Capture network packets in real time.
-
-\- Extract useful information from network packets.
-
-\- Monitor network traffic statistics.
-
-\- Detect suspicious network behavior.
-
-\- Detect possible port scanning activity.
-
-\- Detect possible packet flooding activity.
-
-\- Detect possible ICMP flooding activity.
-
-\- Generate security alerts.
-
-\- Store security alerts in an SQLite database.
-
-\- Apply machine learning for network traffic classification.
-
-\- Develop adaptive risk scoring.
-
-\- Provide an explainable security monitoring dashboard.
-
-
-
-\---
-
-
-
-\## System Architecture
-
-
-
-```text
-
-NETWORK TRAFFIC
-
-&#x20;     |
-
-&#x20;     v
-
-Packet Capture
-
-&#x20;   (Scapy)
-
-&#x20;     |
-
-&#x20;     v
-
-Packet Parser
-
-&#x20;     |
-
-&#x20;     v
-
-Feature Extraction
-
-&#x20;     |
-
-&#x20;     +----------------------+
-
-&#x20;     |                      |
-
-&#x20;     v                      v
-
-Rule-Based IDS          ML-Based IDS
-
-&#x20;     |                      |
-
-&#x20;     +----------+-----------+
-
-&#x20;                |
-
-&#x20;                v
-
-&#x20;       Adaptive Risk Scoring
-
-&#x20;                |
-
-&#x20;                v
-
-&#x20;         Alert Manager
-
-&#x20;                |
-
-&#x20;                v
-
-&#x20;           SQLite DB
-
-&#x20;                |
-
-&#x20;                v
-
-&#x20;         Web Dashboard
-
-
-
-
-
-
-
-Technologies Used
-
-Python
-
-Scapy
-
-SQLite
-
-Machine Learning
-
-Scikit-learn
-
-Pandas
-
-NumPy
-
-Streamlit
-
-Git
-
-GitHub
-
-Current Project Status
-
-Completed
-
-&#x20;Project structure created
-
-&#x20;Python environment configured
-
-&#x20;Scapy installed
-
-&#x20;Npcap configured for Windows packet capture
-
-&#x20;Real-time packet capture
-
-&#x20;Packet parsing
-
-&#x20;Network statistics
-
-&#x20;Port scan detection
-
-&#x20;General flood detection
-
-&#x20;ICMP flood detection
-
-&#x20;SQLite database
-
-&#x20;Security alert storage
-
-&#x20;Database integration testing
-
-In Progress
-
-&#x20;Integrate ICMP flood detector into main packet processing
-
-&#x20;SYN flood detection
-
-&#x20;Additional network anomaly detection
-
-&#x20;Adaptive risk scoring
-
-&#x20;Machine learning model
-
-&#x20;Machine learning evaluation
-
-&#x20;Explainable alerts
-
-&#x20;Web dashboard
-
-Planned
-
-&#x20;Complete hybrid IDS architecture
-
-&#x20;Host-specific behavioral baseline
-
-&#x20;Alert prioritization
-
-&#x20;Dashboard graphs and statistics
-
-&#x20;Performance evaluation
-
-&#x20;Final testing
-
-&#x20;Project documentation
-
-&#x20;Final presentation
-
-&#x20;Viva preparation
-
-Current Detection Modules
-
-1\. Port Scan Detection
-
-
-
-The system monitors destination ports contacted by a source IP.
-
-
-
-If a source contacts a large number of different ports within a short time window, the system generates a possible port scan alert.
-
-
-
-Current threshold:
-
-
-
-10 different ports within 10 seconds
-
-2\. General Flood Detection
-
-
-
-The system monitors packet activity from each source IP.
-
-
-
-If a source sends a large number of packets within a short time window, a possible flooding alert is generated.
-
-
-
-Current threshold:
-
-
-
-20 packets within 5 seconds
-
-3\. ICMP Flood Detection
-
-
-
-The system separately monitors ICMP packet activity.
-
-
-
-If a source generates a high number of ICMP packets within a short time window, a possible ICMP flood alert is generated.
-
-
-
-Current threshold:
-
-
-
-10 ICMP packets within 5 seconds
-
-Database
-
-
-
-Security alerts are stored using SQLite.
-
-
-
-The database contains information such as:
-
-
-
-Alert ID
-
-Timestamp
-
-Source IP
-
-Destination IP
-
-Attack type
-
-Severity
-
-Detection details
-
-
-
-The generated SQLite database is intentionally excluded from GitHub using .gitignore.
-
-
-
-Project Structure
-
-CN\_IDS\_Project
-
-|
-
-+-- main.py
-
-+-- packet\_sniffer.py
-
-+-- packet\_parser.py
-
-+-- statistics.py
-
-+-- database.py
-
-|
-
-+-- test\_port\_scan.py
-
-+-- test\_flood.py
-
-+-- test\_icmp\_flood.py
-
-+-- test\_database.py
-
-+-- test\_alert\_database.py
-
-|
-
-+-- detectors
-
-|   +-- \_\_init\_\_.py
-
-|   +-- port\_scan.py
-
-|   +-- flood\_detector.py
-
-|   +-- icmp\_flood.py
-
-|
-
-+-- README.md
-
-+-- .gitignore
-
-How to Run
-
-Start the network monitoring system
-
-python main.py
-
-
-
-The system captures network packets and displays packet information and network statistics.
-
-
-
-Test Port Scan Detection
-
-python test\_port\_scan.py
-
-Test Flood Detection
-
-python test\_flood.py
-
-Test ICMP Flood Detection
-
-python test\_icmp\_flood.py
-
-Test Database
-
-python test\_database.py
-
-Test Alert Database Integration
-
-python test\_alert\_database.py
-
-Future Hybrid Detection Approach
-
-
-
-The planned system will combine multiple detection signals.
-
-
-
-A proposed risk score is:
-
-
-
-Risk Score =
-
-0.35 × Rule Score
-
-\+
-
-0.35 × ML Score
-
-\+
-
-0.20 × Anomaly Score
-
-\+
-
-0.10 × Historical Score
-
-
-
-The resulting score will be mapped to security levels such as:
-
-
-
-0–25    SAFE
-
-26–50   LOW
-
-51–70   MEDIUM
-
-71–85   HIGH
-
-86–100  CRITICAL
-
-
-
-These values are part of the proposed design and may be adjusted during evaluation.
-
-
-
-Safety and Testing
-
-
-
-Testing of network-security detection functionality should be performed only on systems and networks where testing is authorized.
-
-
-
-The project uses simulated packet information for detector testing to avoid generating unauthorized network attacks.
-
-
-
-Project Development Plan
-
-Week 1
-
-Packet capture
-
-Packet parsing
-
-Network statistics
-
-Database
-
-Initial rule-based detection
-
-Week 2
-
-Additional detection techniques
-
-Alert management
-
-Risk scoring
-
-Network anomaly features
-
-Week 3
-
-Dataset preparation
-
-Machine learning
-
-Model evaluation
-
-Integration with IDS
-
-Week 4
-
-Dashboard
-
-Testing
-
-Performance evaluation
-
-Documentation
-
-Presentation
-
-Viva preparation
-
-
-
-
-
-
-
+- The Isolation Forest is trained on generated synthetic baseline features. It is an unsupervised prototype signal, not a calibrated probability and not yet evaluated against a labelled real-world IDS dataset.
+- The anomaly signal is currently based on the strongest normalized traffic-rate/port/ICMP/SYN signal. A future improvement could replace it with a well-evaluated per-host rolling baseline.
+- Rules and thresholds can generate false positives. Alert labels should reflect the known scenario or a justified analyst review.
+- This project is for coursework and authorized experiments, not production network protection.

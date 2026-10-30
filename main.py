@@ -4,9 +4,9 @@ from packet_sniffer import process_packet
 
 def start_monitor():
 
-    print("========================================")
+
     print("NETWORK SECURITY MONITORING SYSTEM")
-    print("========================================")
+
 
     print("\nStarting packet capture...")
     print("Press Ctrl+C to stop.\n")
